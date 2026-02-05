@@ -1,0 +1,10 @@
+spring:
+  data:
+    redis:
+      host: redis
+  
+  kafka:
+    bootstrap-servers: kafka:9092
+
+elasticsearch:
+  host: elasticsearch

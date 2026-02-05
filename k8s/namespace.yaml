@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gdrive
+  labels:
+    name: gdrive
+    app: mini-google-drive
