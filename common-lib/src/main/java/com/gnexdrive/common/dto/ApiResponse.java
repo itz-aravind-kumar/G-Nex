@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 /**
  * Standard API response wrapper
@@ -23,22 +24,42 @@ public class ApiResponse<T> {
     private String requestId;
     
     public static <T> ApiResponse<T> success(T data) {
-        // TODO: Implement success response builder
-        return null;
+        return ApiResponse.<T>builder()
+                .success(true)
+                .message("Request processed successfully")
+                .data(data)
+                .timestamp(LocalDateTime.now())
+                .requestId(UUID.randomUUID().toString())
+                .build();
     }
     
     public static <T> ApiResponse<T> success(String message, T data) {
-        // TODO: Implement success response builder with message
-        return null;
+        return ApiResponse.<T>builder()
+                .success(true)
+                .message(message)
+                .data(data)
+                .timestamp(LocalDateTime.now())
+                .requestId(UUID.randomUUID().toString())
+                .build();
     }
     
     public static <T> ApiResponse<T> error(String message) {
-        // TODO: Implement error response builder
-        return null;
+        return ApiResponse.<T>builder()
+                .success(false)
+                .message(message)
+                .data(null)
+                .timestamp(LocalDateTime.now())
+                .requestId(UUID.randomUUID().toString())
+                .build();
     }
     
     public static <T> ApiResponse<T> error(String message, T data) {
-        // TODO: Implement error response builder with data
-        return null;
+        return ApiResponse.<T>builder()
+                .success(false)
+                .message(message)
+                .data(data)
+                .timestamp(LocalDateTime.now())
+                .requestId(UUID.randomUUID().toString())
+                .build();
     }
 }
