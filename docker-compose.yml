@@ -27,21 +27,21 @@ services:
     networks:
       - gdrive-network
 
-  # Elasticsearch
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
-    container_name: gdrive-elasticsearch
-    environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-    ports:
-      - "9200:9200"
-      - "9300:9300"
-    volumes:
-      - elasticsearch_data:/usr/share/elasticsearch/data
-    networks:
-      - gdrive-network
+  # Elasticsearch - Commented out for now
+  # elasticsearch:
+  #   image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+  #   container_name: gdrive-elasticsearch
+  #   environment:
+  #     - discovery.type=single-node
+  #     - xpack.security.enabled=false
+  #     - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+  #   ports:
+  #     - "9200:9200"
+  #     - "9300:9300"
+  #   volumes:
+  #     - elasticsearch_data:/usr/share/elasticsearch/data
+  #   networks:
+  #     - gdrive-network
 
   # Kafka & Zookeeper
   zookeeper:
@@ -98,7 +98,6 @@ services:
     depends_on:
       - file-service
       - metadata-service
-      - search-service
     networks:
       - gdrive-network
 
@@ -134,23 +133,23 @@ services:
     networks:
       - gdrive-network
 
-  # Search Service
-  search-service:
-    build: ./search-service
-    container_name: gdrive-search-service
-    ports:
-      - "8083:8083"
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - ELASTICSEARCH_URIS=http://elasticsearch:9200
-      - SPRING_DATA_REDIS_HOST=redis
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-    depends_on:
-      - elasticsearch
-      - redis
-      - kafka
-    networks:
-      - gdrive-network
+  # Search Service - Commented out (requires Elasticsearch)
+  # search-service:
+  #   build: ./search-service
+  #   container_name: gdrive-search-service
+  #   ports:
+  #     - "8083:8083"
+  #   environment:
+  #     - SPRING_PROFILES_ACTIVE=docker
+  #     - ELASTICSEARCH_URIS=http://elasticsearch:9200
+  #     - SPRING_DATA_REDIS_HOST=redis
+  #     - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+  #   depends_on:
+  #     - elasticsearch
+  #     - redis
+  #     - kafka
+  #   networks:
+  #     - gdrive-network
 
   # Activity Service
   activity-service:
@@ -175,5 +174,5 @@ networks:
 volumes:
   postgres_data:
   redis_data:
-  elasticsearch_data:
+  # elasticsearch_data:  # Commented out
   minio_data:

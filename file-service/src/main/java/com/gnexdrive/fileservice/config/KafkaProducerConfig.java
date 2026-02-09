@@ -1,5 +1,6 @@
 package com.gnexdrive.fileservice.config;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,6 +17,7 @@ import java.util.Map;
 /**
  * Kafka producer configuration
  */
+@Slf4j
 @Configuration
 public class KafkaProducerConfig {
 
@@ -24,13 +26,29 @@ public class KafkaProducerConfig {
 
     @Bean
     public ProducerFactory<String, Object> producerFactory() {
-        // TODO: Implement Kafka producer factory
-        return null;
+        log.info("Configuring Kafka producer for servers: {}", bootstrapServers);
+        
+        Map<String, Object> config = new HashMap<>();
+        config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+        
+        // Producer reliability settings
+        config.put(ProducerConfig.ACKS_CONFIG, "all");
+        config.put(ProducerConfig.RETRIES_CONFIG, 3);
+        config.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);
+        
+        // Performance settings
+        config.put(ProducerConfig.BATCH_SIZE_CONFIG, 16384);
+        config.put(ProducerConfig.LINGER_MS_CONFIG, 10);
+        config.put(ProducerConfig.BUFFER_MEMORY_CONFIG, 33554432);
+        config.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "snappy");
+        
+        return new DefaultKafkaProducerFactory<>(config);
     }
 
     @Bean
     public KafkaTemplate<String, Object> kafkaTemplate() {
-        // TODO: Implement Kafka template
-        return null;
+        return new KafkaTemplate<>(producerFactory());
     }
 }

@@ -10,7 +10,7 @@ import org.springframework.kafka.annotation.EnableKafka;
  * Manages file metadata in PostgreSQL
  */
 @SpringBootApplication
-@EnableJpa@EnableKafka
+@EnableKafka
 @EnableJpaAuditing
 public class MetadataServiceApplication {
 
