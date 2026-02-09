@@ -21,6 +21,13 @@
         <dependency>
             <groupId>com.gnexdrive</groupId>
             <artifactId>common-lib</artifactId>
+            <exclusions>
+                <!-- Exclude Spring MVC - Gateway uses WebFlux -->
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-web</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- Spring Cloud Gateway -->

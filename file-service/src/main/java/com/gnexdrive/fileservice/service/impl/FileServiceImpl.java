@@ -72,7 +72,7 @@ public class FileServiceImpl implements FileService {
                     .contentType(file.getContentType())
                     .checksum(checksum)
                     .uploadedAt(LocalDateTime.now())
-                    .status(FileMetadataDto.FileStatus.UPLOADED)
+                    .status("UPLOADED")
                     .build();
             
             // Publish event to Kafka

@@ -31,15 +31,8 @@ public class SecurityConfig {
                 
                 // Configure authorization rules
                 .authorizeExchange(exchanges -> exchanges
-                        // Public endpoints - no authentication required
-                        .pathMatchers(
-                                "/actuator/**",
-                                "/health",
-                                "/api/v1/auth/**"
-                        ).permitAll()
-                        
-                        // All other endpoints require authentication
-                        .anyExchange().authenticated()
+                        // Allow all requests - JWT filter handles authentication
+                        .anyExchange().permitAll()
                 )
                 
                 // Disable HTTP Basic authentication

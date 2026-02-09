@@ -40,15 +40,8 @@ public class ApiGatewayApplication {
                                         .setName("fileServiceCircuitBreaker")
                                         .setFallbackUri("forward:/fallback/file-service")
                                 )
-                                .retry(retryConfig -> retryConfig
-                                        .setRetries(3)
-                                        .setBackoff(Duration.ofMillis(100), Duration.ofMillis(1000), 2, true)
-                                )
-                                .requestRateLimiter(rl -> rl
-                                        .setRateLimiter(null) // Uses default Redis rate limiter
-                                )
                         )
-                        .uri("lb://file-service")
+                        .uri("http://localhost:8081")
                 )
                 
                 // Metadata Service Routes
@@ -59,9 +52,8 @@ public class ApiGatewayApplication {
                                         .setName("metadataServiceCircuitBreaker")
                                         .setFallbackUri("forward:/fallback/metadata-service")
                                 )
-                                .retry(retryConfig -> retryConfig.setRetries(3))
                         )
-                        .uri("lb://metadata-service")
+                        .uri("http://localhost:8082")
                 )
                 
                 // Search Service Routes
@@ -72,9 +64,8 @@ public class ApiGatewayApplication {
                                         .setName("searchServiceCircuitBreaker")
                                         .setFallbackUri("forward:/fallback/search-service")
                                 )
-                                .retry(retryConfig -> retryConfig.setRetries(2))
                         )
-                        .uri("lb://search-service")
+                        .uri("http://localhost:8083")
                 )
                 
                 // Activity Service Routes
@@ -85,9 +76,8 @@ public class ApiGatewayApplication {
                                         .setName("activityServiceCircuitBreaker")
                                         .setFallbackUri("forward:/fallback/activity-service")
                                 )
-                                .retry(retryConfig -> retryConfig.setRetries(2))
                         )
-                        .uri("lb://activity-service")
+                        .uri("http://localhost:8084")
                 )
                 
                 .build();
