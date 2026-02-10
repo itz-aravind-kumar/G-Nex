@@ -33,14 +33,5 @@ public class FileMetadataDto {
     private LocalDateTime modifiedAt;
     
     private String checksum;
-    private FileStatus status;
-    
-    public enum FileStatus {
-        UPLOADING,
-        UPLOADED,
-        PROCESSING,
-        AVAILABLE,
-        DELETED,
-        ERROR
-    }
+    private String status;  // Status as String: UPLOADING, UPLOADED, PROCESSING, AVAILABLE, DELETED, ERROR
 }

@@ -2,6 +2,7 @@ package com.gnexdrive.gateway.util;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,7 +27,17 @@ public class JwtUtil {
      * Get the signing key from secret
      */
     private SecretKey getSigningKey() {
-        byte[] keyBytes = secretKey.getBytes(StandardCharsets.UTF_8);
+        // Ensure the key is at least 64 bytes for HS512
+        String paddedKey = secretKey;
+        while (paddedKey.getBytes(StandardCharsets.UTF_8).length < 64) {
+            paddedKey += secretKey;
+        }
+        byte[] keyBytes = paddedKey.getBytes(StandardCharsets.UTF_8);
+        if (keyBytes.length < 64) {
+            keyBytes = new byte[64];
+            System.arraycopy(paddedKey.getBytes(StandardCharsets.UTF_8), 0, keyBytes, 0, 
+                Math.min(paddedKey.getBytes(StandardCharsets.UTF_8).length, 64));
+        }
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
@@ -129,7 +140,7 @@ public class JwtUtil {
     }
 
     /**
-     * Generate a token for testing purposes
+     * Generate a token for testing purpo, SignatureAlgorithm.HS512ses
      */
     public String generateToken(String userId, String username, String email) {
         return Jwts.builder()

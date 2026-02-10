@@ -112,7 +112,7 @@ public class MetadataController {
 
     @Operation(summary = "Delete file metadata")
     @DeleteMapping("/{fileId}")
-    public ResponseEntity<ApiResponse<Void>> deleteMetadata(
+    public ResponseEntity<ApiResponse<String>> deleteMetadata(
             @PathVariable String fileId,
             @RequestHeader("X-User-Id") String userId) {
         log.info("DELETE /api/v1/metadata/{} - User: {}", fileId, userId);
