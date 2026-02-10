@@ -1,6 +1,8 @@
 package com.gnexdrive.metadataservice.config;
 
-import com.gnexdrive.common.event.FileEvent;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,8 +14,7 @@ import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.gnexdrive.common.event.FileEvent;
 
 /**
  * Kafka Consumer Configuration
@@ -70,7 +71,8 @@ public class KafkaConsumerConfig {
         ConcurrentKafkaListenerContainerFactory<String, FileEvent> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
-        factory.setConcurrency(3); // 3 concurrent consumers
+        factory.setConcurrency(1); // 1 concurrent consumers
+        // golden rule : concurrency = partitions for a topic
         factory.getContainerProperties().setPollTimeout(3000);
         return factory;
     }
