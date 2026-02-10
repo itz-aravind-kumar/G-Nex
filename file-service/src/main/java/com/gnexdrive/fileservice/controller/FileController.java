@@ -31,7 +31,7 @@ public class FileController {
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<FileMetadataDto>> uploadFile(
             @RequestParam("file") MultipartFile file,
-            @RequestHeader(value = "X-User-Id", required = false, defaultValue = "anonymous") String userId) {
+            @RequestHeader("X-User-Id") String userId) {
         
         log.info("Upload request received: fileName={}, size={}, userId={}", 
                 file.getOriginalFilename(), file.getSize(), userId);
@@ -58,7 +58,7 @@ public class FileController {
     @GetMapping("/{fileId}/download")
     public ResponseEntity<?> downloadFile(
             @PathVariable String fileId,
-            @RequestHeader(value = "X-User-Id", required = false, defaultValue = "anonymous") String userId) {
+            @RequestHeader("X-User-Id") String userId) {
         
         log.info("Download request received: fileId={}, userId={}", fileId, userId);
         
@@ -77,6 +77,11 @@ public class FileController {
                     .headers(headers)
                     .contentType(MediaType.APPLICATION_OCTET_STREAM)
                     .body(resource);
+        
+        } catch (SecurityException e) {
+            log.warn("Unauthorized file download: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("Access denied: " + e.getMessage()));
                     
         } catch (Exception e) {
             log.error("File download failed: {}", e.getMessage(), e);
@@ -89,7 +94,7 @@ public class FileController {
     @DeleteMapping("/{fileId}")
     public ResponseEntity<ApiResponse<Void>> deleteFile(
             @PathVariable String fileId,
-            @RequestHeader(value = "X-User-Id", required = false, defaultValue = "anonymous") String userId) {
+            @RequestHeader("X-User-Id") String userId) {
         
         log.info("Delete request received: fileId={}, userId={}", fileId, userId);
         
@@ -97,8 +102,11 @@ public class FileController {
             fileService.deleteFile(fileId, userId);
             
             return ResponseEntity.ok(
-                    ApiResponse.success("File deleted successfully", null));
-                    
+                    ApiResponse.success("File deleted successfully", null));        
+        } catch (SecurityException e) {
+            log.warn("Unauthorized file deletion: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("Access denied: " + e.getMessage()));                    
         } catch (Exception e) {
             log.error("File deletion failed: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

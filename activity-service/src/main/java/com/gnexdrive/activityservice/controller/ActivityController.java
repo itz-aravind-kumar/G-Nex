@@ -32,15 +32,28 @@ public class ActivityController {
             @PathVariable String userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        // TODO: Implement get user activities endpoint
-        return null;
+        log.info("Get activities request for user: {}, page: {}, size: {}", userId, page, size);
+        
+        Page<FileActivityDto> activities = activityService.getUserActivities(
+                userId, org.springframework.data.domain.PageRequest.of(page, size, 
+                org.springframework.data.domain.Sort.by("timestamp").descending()));
+        
+        ApiResponse<Page<FileActivityDto>> response = ApiResponse.success(
+                "Activities retrieved successfully", activities);
+        
+        return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Get file activities")
     @GetMapping("/file/{fileId}")
     public ResponseEntity<ApiResponse<Object>> getFileActivities(@PathVariable String fileId) {
-        // TODO: Implement get file activities endpoint
-        return null;
+        log.info("Get activities request for file: {}", fileId);
+        
+        var activities = activityService.getFileActivities(fileId);
+        ApiResponse<Object> response = ApiResponse.success(
+                "File activities retrieved successfully", activities);
+        
+        return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Get recent activities")
@@ -48,15 +61,25 @@ public class ActivityController {
     public ResponseEntity<ApiResponse<Object>> getRecentActivities(
             @PathVariable String userId,
             @RequestParam(defaultValue = "7") int days) {
-        // TODO: Implement get recent activities endpoint
-        return null;
+        log.info("Get recent {} days activities for user: {}", days, userId);
+        
+        var activities = activityService.getRecentActivities(userId, days);
+        ApiResponse<Object> response = ApiResponse.success(
+                String.format("Recent %d days activities retrieved", days), activities);
+        
+        return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Get activity statistics")
     @GetMapping("/user/{userId}/stats")
     public ResponseEntity<ApiResponse<Object>> getActivityStats(@PathVariable String userId) {
-        // TODO: Implement get activity statistics endpoint
-        return null;
+        log.info("Get activity statistics for user: {}", userId);
+        
+        Object stats = activityService.getActivityStats(userId);
+        ApiResponse<Object> response = ApiResponse.success(
+                "Activity statistics retrieved", stats);
+        
+        return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Get activities by date range")
@@ -67,7 +90,16 @@ public class ActivityController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        // TODO: Implement get activities by date range endpoint
-        return null;
+        log.info("Get activities for user: {} from {} to {}", userId, startDate, endDate);
+        
+        Page<FileActivityDto> activities = activityService.getActivitiesByDateRange(
+                userId, startDate, endDate, 
+                org.springframework.data.domain.PageRequest.of(page, size,
+                org.springframework.data.domain.Sort.by("timestamp").descending()));
+        
+        ApiResponse<Page<FileActivityDto>> response = ApiResponse.success(
+                "Activities retrieved for date range", activities);
+        
+        return ResponseEntity.ok(response);
     }
 }

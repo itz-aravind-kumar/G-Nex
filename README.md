@@ -1,4 +1,4 @@
-# Mini Google Drive - Microservices Backend
+Drive - Microservices Backend
 
 A production-grade, scalable file storage backend system inspired by Google Drive, designed to demonstrate system design concepts for technical interviews.
 

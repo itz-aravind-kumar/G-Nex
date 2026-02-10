@@ -27,11 +27,11 @@ spring:
           filters:
             - StripPrefix=0
         
-        # Search Service Routes
-        - id: search-service
+        # User Service Routes
+        - id: user-service
           uri: http://localhost:8083
           predicates:
-            - Path=/api/v1/search/**
+            - Path=/api/v1/auth/**,/api/v1/users/**
           filters:
             - StripPrefix=0
         
@@ -40,6 +40,14 @@ spring:
           uri: http://localhost:8084
           predicates:
             - Path=/api/v1/activities/**
+          filters:
+            - StripPrefix=0
+        
+        # Search Service Routes
+        - id: search-service
+          uri: http://localhost:8085
+          predicates:
+            - Path=/api/v1/search/**
           filters:
             - StripPrefix=0
       
@@ -72,7 +80,7 @@ spring:
 
 # JWT Configuration
 jwt:
-  secret: mySecretKeyForJWTTokenGenerationAndValidation12345678
+  secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
   expiration: 3600000  # 1 hour in milliseconds
 
 # Circuit Breaker Configuration

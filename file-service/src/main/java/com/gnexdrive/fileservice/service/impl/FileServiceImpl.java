@@ -6,6 +6,7 @@ import com.gnexdrive.common.event.FileEvent;
 import com.gnexdrive.common.exception.FileStorageException;
 import com.gnexdrive.common.exception.ResourceNotFoundException;
 import com.gnexdrive.common.util.FileUtils;
+import com.gnexdrive.fileservice.client.MetadataServiceClient;
 import com.gnexdrive.fileservice.service.FileService;
 import com.gnexdrive.fileservice.service.KafkaProducerService;
 import com.gnexdrive.fileservice.service.ObjectStorageService;
@@ -30,6 +31,7 @@ public class FileServiceImpl implements FileService {
 
     private final ObjectStorageService objectStorageService;
     private final KafkaProducerService kafkaProducerService;
+    private final MetadataServiceClient metadataServiceClient;
 
     @Override
     public FileMetadataDto uploadFile(MultipartFile file, String userId) {
@@ -92,14 +94,22 @@ public class FileServiceImpl implements FileService {
         log.info("Downloading file: fileId={}, userId={}", fileId, userId);
         
         try {
-            // In a real implementation, you would fetch file metadata from metadata-service
-            // For now, we'll construct the storage path
-            // This is a simplified version - in production, validate ownership via metadata service
+            // Verify ownership before allowing download
+            if (!metadataServiceClient.verifyOwnership(fileId, userId)) {
+                log.warn("Unauthorized download attempt: fileId={}, userId={}", fileId, userId);
+                throw new SecurityException("You do not have permission to download this file");
+            }
             
-            String storagePath = findStoragePath(fileId, userId);
+            // Get file metadata to retrieve storage path
+            FileMetadataDto metadata = metadataServiceClient.getFileMetadata(fileId);
+            if (metadata == null) {
+                throw new ResourceNotFoundException("File not found: " + fileId);
+            }
+            
+            String storagePath = metadata.getStoragePath();
             
             if (!objectStorageService.fileExists(storagePath)) {
-                throw new ResourceNotFoundException("File not found: " + fileId);
+                throw new ResourceNotFoundException("File not found in storage: " + fileId);
             }
             
             Resource resource = objectStorageService.downloadFile(storagePath);
@@ -123,11 +133,22 @@ public class FileServiceImpl implements FileService {
         log.info("Deleting file: fileId={}, userId={}", fileId, userId);
         
         try {
-            // In production, validate ownership via metadata service
-            String storagePath = findStoragePath(fileId, userId);
+            // Verify ownership before allowing delete
+            if (!metadataServiceClient.verifyOwnership(fileId, userId)) {
+                log.warn("Unauthorized delete attempt: fileId={}, userId={}", fileId, userId);
+                throw new SecurityException("You do not have permission to delete this file");
+            }
+            
+            // Get file metadata to retrieve storage path
+            FileMetadataDto metadata = metadataServiceClient.getFileMetadata(fileId);
+            if (metadata == null) {
+                throw new ResourceNotFoundException("File not found: " + fileId);
+            }
+            
+            String storagePath = metadata.getStoragePath();
             
             if (!objectStorageService.fileExists(storagePath)) {
-                throw new ResourceNotFoundException("File not found: " + fileId);
+                throw new ResourceNotFoundException("File not found in storage: " + fileId);
             }
             
             objectStorageService.deleteFile(storagePath);
