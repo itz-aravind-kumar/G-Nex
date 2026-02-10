@@ -173,6 +173,4 @@ This project covers these common system design questions:
 
 This is a learning project. Feel free to fork and experiment!
 
-## 📄 License
 
-MIT License
