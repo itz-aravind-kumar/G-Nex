@@ -39,12 +39,16 @@ public interface ThumbnailMetadataRepository extends JpaRepository<ThumbnailMeta
     List<ThumbnailMetadata> findByStatus(ThumbnailStatus status);
 
     /**
+     * Find thumbnails by file ID and status
+     */
+    List<ThumbnailMetadata> findByFileIdAndStatus(String fileId, ThumbnailStatus status);
+
+    /**
      * Find pending thumbnails older than specified time (for retry)
      */
-    @Query("SELECT t FROM ThumbnailMetadata t WHERE t.status = :status " +
+    @Query("SELECT t FROM ThumbnailMetadata t WHERE (t.status = 'PENDING' OR t.status = 'FAILED') " +
            "AND t.updatedAt < :olderThan AND t.attemptCount < :maxAttempts")
     List<ThumbnailMetadata> findPendingForRetry(
-        @Param("status") ThumbnailStatus status,
         @Param("olderThan") LocalDateTime olderThan,
         @Param("maxAttempts") int maxAttempts
     );

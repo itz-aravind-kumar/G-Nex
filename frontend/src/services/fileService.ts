@@ -21,8 +21,16 @@ export const fileService = {
   },
 
   async downloadFile(fileId: string): Promise<Blob> {
+    // Get userId from localStorage
+    const userStr = localStorage.getItem('user')
+    const user = userStr ? JSON.parse(userStr) : null
+    const userId = user?.userId || user?.id || 'unknown'
+    
     const response = await apiClient.getClient().get(`/api/v1/files/${fileId}/download`, {
       responseType: 'blob',
+      headers: {
+        'X-User-Id': userId
+      }
     })
     return response.data
   },
@@ -63,6 +71,33 @@ export const fileService = {
     } catch (error) {
       // Endpoint doesn't exist yet, return mock data
       return { totalSize: 0, fileCount: 0 }
+    }
+  },
+
+  async getThumbnail(fileId: string, size: 'SMALL' | 'GRID' | 'PREVIEW' = 'GRID'): Promise<string | null> {
+    try {
+      const response = await apiClient.get<ApiResponse<any>>(
+        `/api/v1/thumbnails/${fileId}?size=${size}`
+      )
+      // Return the thumbnail URL if available
+      if (response.data && response.data.url) {
+        return response.data.url
+      }
+      return null
+    } catch (error) {
+      // Thumbnail not ready or failed
+      return null
+    }
+  },
+
+  async getThumbnailStatus(fileId: string): Promise<any> {
+    try {
+      const response = await apiClient.get<ApiResponse<any>>(
+        `/api/v1/thumbnails/${fileId}/status`
+      )
+      return response.data
+    } catch (error) {
+      return null
     }
   },
 }

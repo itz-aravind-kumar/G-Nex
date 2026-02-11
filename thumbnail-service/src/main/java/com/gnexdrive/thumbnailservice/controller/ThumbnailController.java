@@ -38,13 +38,42 @@ public class ThumbnailController {
         
         log.info("Get thumbnail request: fileId={}, size={}, userId={}", fileId, size, userId);
         
-        // TODO: Implement thumbnail retrieval logic
-        // 1. Check if thumbnail exists and is ready
-        // 2. If ready: return 303 redirect to presigned URL or 200 with URL
-        // 3. If pending: return 202 Accepted with status endpoint
-        // 4. If failed or not exists: return 404 or trigger generation
-        
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        try {
+            ThumbnailDto thumbnail = thumbnailService.getThumbnail(fileId, size);
+            
+            if (thumbnail != null && thumbnail.getUrl() != null) {
+                // Thumbnail is ready - return URL in response
+                log.info("Returning thumbnail URL: fileId={}, size={}", fileId, size);
+                return ResponseEntity.ok()
+                        .body(ApiResponse.success("Thumbnail ready", 
+                                java.util.Map.of("url", thumbnail.getUrl())));
+            }
+            
+            // Check if thumbnail is pending or failed
+            ThumbnailStatusDto status = thumbnailService.getThumbnailStatus(fileId);
+            
+            if (status != null && !status.getSizes().isEmpty()) {
+                boolean isPending = status.getSizes().stream()
+                        .anyMatch(s -> s.getSize() == size && 
+                                (s.getStatus() == com.gnexdrive.thumbnailservice.entity.ThumbnailMetadata.ThumbnailStatus.PENDING ||
+                                 s.getStatus() == com.gnexdrive.thumbnailservice.entity.ThumbnailMetadata.ThumbnailStatus.PROCESSING));
+                
+                if (isPending) {
+                    // Thumbnail generation in progress
+                    return ResponseEntity.status(HttpStatus.ACCEPTED)
+                            .body(ApiResponse.success("Thumbnail generation in progress", status));
+                }
+            }
+            
+            // Thumbnail not found
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("Thumbnail not found for fileId=" + fileId + ", size=" + size));
+            
+        } catch (Exception e) {
+            log.error("Error getting thumbnail: fileId={}, size={}", fileId, size, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to get thumbnail: " + e.getMessage()));
+        }
     }
 
     @Operation(summary = "Get thumbnail status for a file")
@@ -62,7 +91,7 @@ public class ThumbnailController {
             // 3. Return overall status and individual size statuses
             
             ThumbnailStatusDto status = thumbnailService.getThumbnailStatus(fileId);
-            return ResponseEntity.ok(ApiResponse.success(status, "Thumbnail status retrieved"));
+            return ResponseEntity.ok(ApiResponse.success("Thumbnail status retrieved", status));
             
         } catch (Exception e) {
             log.error("Error getting thumbnail status: fileId={}", fileId, e);
@@ -86,7 +115,7 @@ public class ThumbnailController {
             // 3. Return list of thumbnail DTOs
             
             List<ThumbnailDto> thumbnails = thumbnailService.getAllThumbnails(fileId);
-            return ResponseEntity.ok(ApiResponse.success(thumbnails, "Thumbnails retrieved"));
+            return ResponseEntity.ok(ApiResponse.success("Thumbnails retrieved", thumbnails));
             
         } catch (Exception e) {
             log.error("Error getting thumbnails: fileId={}", fileId, e);
@@ -113,7 +142,7 @@ public class ThumbnailController {
             
             ThumbnailStatusDto status = thumbnailService.requestThumbnailGeneration(request, userId);
             return ResponseEntity.accepted()
-                    .body(ApiResponse.success(status, "Thumbnail generation requested"));
+                    .body(ApiResponse.success("Thumbnail generation requested", status));
             
         } catch (IllegalArgumentException e) {
             log.warn("Invalid thumbnail request: {}", e.getMessage());
@@ -142,7 +171,7 @@ public class ThumbnailController {
             // 4. Publish thumbnail.deleted event
             
             thumbnailService.deleteThumbnails(fileId, userId);
-            return ResponseEntity.ok(ApiResponse.success(null, "Thumbnails deleted successfully"));
+            return ResponseEntity.ok(ApiResponse.success("Thumbnails deleted successfully", null));
             
         } catch (Exception e) {
             log.error("Error deleting thumbnails: fileId={}", fileId, e);

@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
+
 /**
  * Kafka Consumer for file events
  * Listens to file.uploaded and file.deleted events
@@ -23,25 +25,34 @@ public class FileEventConsumer {
      */
     @KafkaListener(topics = "file.uploaded", groupId = "thumbnail-service-group")
     public void handleFileUploaded(FileEvent event) {
-        log.info("Received file.uploaded event: {}", event);
+        log.info("Received file.uploaded event: fileId={}, eventType={}", 
+                event.getFileId(), event.getEventType());
         
         try {
-            // TODO: Implement file uploaded handling
-            // 1. Extract file metadata from event
-            // 2. Check if content type supports thumbnails
-            // 3. Enqueue thumbnail generation jobs (async)
-            // 4. For each size: create pending metadata and trigger generation
+            Map<String, Object> payload = event.getPayload();
+            if (payload == null) {
+                log.warn("No payload in file.uploaded event");
+                return;
+            }
             
-            thumbnailService.processThumbnailJob(
-                event.getFileId(),
-                event.getOwnerId(),
-                event.getContentType(),
-                event.getStoragePath(),
-                event.getVersion()
-            );
+            String fileId = event.getFileId();
+            String userId = event.getUserId();
+            String contentType = (String) payload.get("contentType");
+            String storagePath = (String) payload.get("storagePath");
+            Integer version = payload.get("version") != null 
+                    ? ((Number) payload.get("version")).intValue() 
+                    : 1;
+            
+            if (contentType == null || storagePath == null) {
+                log.warn("Missing contentType or storagePath in event payload");
+                return;
+            }
+            
+            log.info("Processing thumbnail job: fileId={}, contentType={}", fileId, contentType);
+            thumbnailService.processThumbnailJob(fileId, userId, contentType, storagePath, version);
             
         } catch (Exception e) {
-            log.error("Error processing file.uploaded event: {}", event, e);
+            log.error("Error processing file.uploaded event: fileId={}", event.getFileId(), e);
             // TODO: Publish to DLQ or retry queue
         }
     }
@@ -51,19 +62,22 @@ public class FileEventConsumer {
      */
     @KafkaListener(topics = "file.deleted", groupId = "thumbnail-service-group")
     public void handleFileDeleted(FileEvent event) {
-        log.info("Received file.deleted event: {}", event);
+        log.info("Received file.deleted event: fileId={}", event.getFileId());
         
         try {
-            // TODO: Implement file deleted handling
-            // 1. Find all thumbnails for the file
-            // 2. Delete thumbnail files from storage
-            // 3. Delete thumbnail metadata
-            // 4. Publish thumbnail.deleted event
+            String fileId = event.getFileId();
+            String userId = event.getUserId();
             
-            thumbnailService.deleteThumbnails(event.getFileId(), event.getOwnerId());
+            if (fileId == null || userId == null) {
+                log.warn("Missing fileId or userId in file.deleted event");
+                return;
+            }
+            
+            log.info("Deleting thumbnails: fileId={}", fileId);
+            thumbnailService.deleteThumbnails(fileId, userId);
             
         } catch (Exception e) {
-            log.error("Error processing file.deleted event: {}", event, e);
+            log.error("Error processing file.deleted event: fileId={}", event.getFileId(), e);
         }
     }
 }

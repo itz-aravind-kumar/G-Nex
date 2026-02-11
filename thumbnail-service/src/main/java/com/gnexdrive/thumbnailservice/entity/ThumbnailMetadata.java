@@ -96,8 +96,8 @@ public class ThumbnailMetadata {
      */
     public enum ThumbnailSize {
         SMALL(150, 150),      // grid view
-        GRID(200, 200),       // default grid
-        PREVIEW(400, 400);    // preview modal
+        GRID(350, 350),       // default grid - increased for clarity
+        PREVIEW(800, 800);    // preview modal - increased for sharp display
 
         private final int width;
         private final int height;

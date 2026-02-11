@@ -24,6 +24,11 @@ minio:
   secret-key: minioadmin
   bucket-name: gdrive-files
 
+# Metadata Service Configuration
+metadata:
+  service:
+    url: http://localhost:8082
+
 # Management Endpoints
 management:
   endpoints:

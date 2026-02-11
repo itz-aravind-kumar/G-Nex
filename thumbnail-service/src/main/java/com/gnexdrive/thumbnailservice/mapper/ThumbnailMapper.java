@@ -14,19 +14,45 @@ public class ThumbnailMapper {
      * Convert entity to DTO
      */
     public ThumbnailDto toDto(ThumbnailMetadata entity) {
-        // TODO: Implement entity to DTO mapping
-        // Map all fields from entity to DTO
+        if (entity == null) {
+            return null;
+        }
         
-        return null;
+        return ThumbnailDto.builder()
+                .id(entity.getId())
+                .fileId(entity.getFileId())
+                .ownerId(entity.getOwnerId())
+                .size(entity.getSize())
+                .url(entity.getUrl())
+                .format(entity.getFormat())
+                .width(entity.getWidth())
+                .height(entity.getHeight())
+                .fileSize(entity.getFileSize())
+                .status(entity.getStatus())
+                .createdAt(entity.getCreatedAt())
+                .updatedAt(entity.getUpdatedAt())
+                .build();
     }
 
     /**
      * Convert DTO to entity
      */
     public ThumbnailMetadata toEntity(ThumbnailDto dto) {
-        // TODO: Implement DTO to entity mapping
-        // Map all fields from DTO to entity
+        if (dto == null) {
+            return null;
+        }
         
-        return null;
+        ThumbnailMetadata entity = new ThumbnailMetadata();
+        entity.setId(dto.getId());
+        entity.setFileId(dto.getFileId());
+        entity.setOwnerId(dto.getOwnerId());
+        entity.setSize(dto.getSize());
+        entity.setUrl(dto.getUrl());
+        entity.setFormat(dto.getFormat());
+        entity.setWidth(dto.getWidth());
+        entity.setHeight(dto.getHeight());
+        entity.setFileSize(dto.getFileSize());
+        entity.setStatus(dto.getStatus());
+        return entity;
     }
 }

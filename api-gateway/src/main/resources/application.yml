@@ -43,9 +43,17 @@ spring:
           filters:
             - StripPrefix=0
         
+        # Thumbnail Service Routes
+        - id: thumbnail-service
+          uri: http://localhost:8085
+          predicates:
+            - Path=/api/v1/thumbnails/**
+          filters:
+            - StripPrefix=0
+        
         # Search Service Routes
         - id: search-service
-          uri: http://localhost:8085
+          uri: http://localhost:8086
           predicates:
             - Path=/api/v1/search/**
           filters:

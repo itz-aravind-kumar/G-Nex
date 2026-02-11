@@ -230,6 +230,7 @@ public class FileServiceImpl implements FileService {
             payload.put("contentType", metadata.getContentType());
             payload.put("storagePath", metadata.getStoragePath());
             payload.put("checksum", metadata.getChecksum());
+            payload.put("version", 1);
             
             FileEvent event = FileEvent.builder()
                     .eventId(UUID.randomUUID().toString())

@@ -7,8 +7,9 @@
 
     <parent>
         <groupId>com.gnexdrive</groupId>
-        <artifactId>gnex-drive</artifactId>
+        <artifactId>mini-google-drive</artifactId>
         <version>1.0.0</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>thumbnail-service</artifactId>
@@ -61,11 +62,13 @@
         <dependency>
             <groupId>io.minio</groupId>
             <artifactId>minio</artifactId>
+            <version>8.5.7</version>
         </dependency>
 
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>s3</artifactId>
+            <version>2.20.26</version>
         </dependency>
 
         <!-- Image Processing -->

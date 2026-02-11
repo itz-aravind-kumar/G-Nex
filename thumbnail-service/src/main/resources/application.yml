@@ -8,8 +8,8 @@ spring:
   # Database Configuration
   datasource:
     url: jdbc:postgresql://localhost:5432/gdrive_metadata
-    username: postgres
-    password: postgres
+    username: gdrive_user
+    password: gdrive_pass
     driver-class-name: org.postgresql.Driver
   
   # JPA Configuration
@@ -56,8 +56,8 @@ minio:
 # Thumbnail Configuration
 thumbnail:
   formats:
-    preferred: webp
-    fallback: jpg
+    preferred: jpg
+    fallback: png
   max-attempts: 3
   retry-delay-minutes: 5
   worker:

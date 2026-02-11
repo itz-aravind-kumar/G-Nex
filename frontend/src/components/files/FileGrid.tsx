@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { FileMetadata } from '@/types'
 import { fileService } from '@/services/fileService'
 import {
@@ -12,6 +12,7 @@ import {
   Trash2,
   Share2,
   MoreVertical,
+  Loader2,
 } from 'lucide-react'
 
 interface FileGridProps {
@@ -49,6 +50,35 @@ const formatDate = (dateString: string) => {
 export default function FileGrid({ files, onRefresh, viewMode = 'grid' }: FileGridProps) {
   const [selectedFile, setSelectedFile] = useState<string | null>(null)
   const [downloading, setDownloading] = useState<string | null>(null)
+  const [thumbnails, setThumbnails] = useState<Record<string, string | null>>({})
+  const [loadingThumbnails, setLoadingThumbnails] = useState<Record<string, boolean>>({})
+
+  // Fetch thumbnails for supported file types
+  useEffect(() => {
+    const fetchThumbnails = async () => {
+      for (const file of files) {
+        // Only fetch thumbnails for images and PDFs
+        if (file.contentType.startsWith('image/') || file.contentType === 'application/pdf') {
+          // Skip if already loaded or loading
+          if (thumbnails[file.fileId] !== undefined || loadingThumbnails[file.fileId]) continue
+
+          setLoadingThumbnails(prev => ({ ...prev, [file.fileId]: true }))
+          
+          try {
+            const thumbnailUrl = await fileService.getThumbnail(file.fileId, 'GRID')
+            setThumbnails(prev => ({ ...prev, [file.fileId]: thumbnailUrl }))
+          } catch (error) {
+            console.error('Failed to fetch thumbnail:', error)
+            setThumbnails(prev => ({ ...prev, [file.fileId]: null }))
+          } finally {
+            setLoadingThumbnails(prev => ({ ...prev, [file.fileId]: false }))
+          }
+        }
+      }
+    }
+
+    fetchThumbnails()
+  }, [files])
 
   const handleDownload = async (file: FileMetadata) => {
     try {
@@ -183,13 +213,28 @@ export default function FileGrid({ files, onRefresh, viewMode = 'grid' }: FileGr
             }`}
           >
             {/* File Preview */}
-            <div className="aspect-square bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-lg flex items-center justify-center p-8 relative overflow-hidden">
-              {file.contentType.startsWith('image/') ? (
+            <div className="aspect-square bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-lg flex items-center justify-center relative overflow-hidden">
+              {loadingThumbnails[file.fileId] ? (
+                <Loader2 className="w-12 h-12 text-gray-400 animate-spin" />
+              ) : thumbnails[file.fileId] ? (
                 <img 
-                  src={`/api/v1/files/${file.fileId}/download`} 
+                  src={thumbnails[file.fileId]!} 
                   alt={file.fileName}
-                  className="w-full h-full object-cover"
+                  className="absolute inset-0 w-full h-full object-cover"
+                  onError={(e) => {
+                    // Fallback to icon if image fails to load
+                    e.currentTarget.style.display = 'none'
+                    setThumbnails(prev => ({ ...prev, [file.fileId]: null }))
+                  }}
                 />
+              ) : file.contentType.startsWith('image/') || file.contentType === 'application/pdf' ? (
+                <>
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 opacity-70"></div>
+                  <Icon className="w-16 h-16 text-gray-400 relative z-10" />
+                  <div className="absolute bottom-2 left-2 right-2 text-center">
+                    <span className="text-xs text-gray-500 bg-white/80 px-2 py-1 rounded">Generating thumbnail...</span>
+                  </div>
+                </>
               ) : (
                 <>
                   <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-gray-50 opacity-50"></div>
