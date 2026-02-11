@@ -141,6 +141,42 @@ mini-google-drive/
 │           ├── application.yml
 │           └── application-docker.yml
 │
+├── thumbnail-service/             # Thumbnail Service (Port 8085)
+│   ├── pom.xml
+│   ├── Dockerfile
+│   ├── README.md
+│   └── src/main/
+│       ├── java/com/gnexdrive/thumbnailservice/
+│       │   ├── ThumbnailServiceApplication.java
+│       │   ├── controller/
+│       │   │   └── ThumbnailController.java  # REST endpoints
+│       │   ├── entity/
+│       │   │   └── ThumbnailMetadata.java    # JPA entity
+│       │   ├── repository/
+│       │   │   └── ThumbnailMetadataRepository.java
+│       │   ├── dto/
+│       │   │   ├── ThumbnailDto.java
+│       │   │   ├── ThumbnailStatusDto.java
+│       │   │   └── ThumbnailRequestDto.java
+│       │   ├── service/
+│       │   │   ├── ThumbnailService.java     # Service interface
+│       │   │   ├── ThumbnailGeneratorService.java
+│       │   │   └── impl/
+│       │   │       ├── ThumbnailServiceImpl.java
+│       │   │       └── ThumbnailGeneratorServiceImpl.java
+│       │   ├── kafka/
+│       │   │   ├── FileEventConsumer.java    # Kafka consumer
+│       │   │   └── ThumbnailEventProducer.java
+│       │   ├── config/
+│       │   │   ├── KafkaConsumerConfig.java
+│       │   │   ├── StorageConfig.java
+│       │   │   └── AsyncConfig.java
+│       │   └── mapper/
+│       │       └── ThumbnailMapper.java
+│       └── resources/
+│           ├── application.yml
+│           └── application-docker.yml
+│
 └── k8s/                           # Kubernetes Deployment Files
     ├── README.md                  # K8s deployment guide
     ├── namespace.yaml             # Namespace definition
@@ -187,6 +223,7 @@ mini-google-drive/
 - `/api/v1/metadata/**` → Metadata Service
 - `/api/v1/search/**` → Search Service
 - `/api/v1/activities/**` → Activity Service
+- `/api/v1/thumbnails/**` → Thumbnail Service
 
 ---
 
@@ -293,11 +330,50 @@ mini-google-drive/
 
 ---
 
+### Thumbnail Service (thumbnail-service) - Port 8085
+**Purpose**: Asynchronous thumbnail generation for images, PDFs, and videos  
+**Dependencies**: Spring Web, Spring Data JPA, PostgreSQL, Kafka, Redis, MinIO, Thumbnailator, PDFBox  
+**Key Features**:
+- Asynchronous thumbnail generation
+- Multiple sizes (SMALL: 150x150, GRID: 200x200, PREVIEW: 400x400)
+- Format optimization (WebP preferred)
+- Image processing (Thumbnailator)
+- PDF first-page rendering (Apache PDFBox)
+- Video frame extraction (FFmpeg)
+- Redis caching for URLs
+- Presigned URL generation
+- Retry logic with exponential backoff
+
+**Endpoints**:
+- `GET /api/v1/thumbnails/{fileId}?size={SMALL|GRID|PREVIEW}` - Get thumbnail
+- `GET /api/v1/thumbnails/{fileId}/status` - Get generation status
+- `GET /api/v1/thumbnails/{fileId}/all` - Get all thumbnails
+- `POST /api/v1/thumbnails/request` - Request generation (on-demand)
+- `DELETE /api/v1/thumbnails/{fileId}` - Delete thumbnails
+
+**Events Consumed**:
+- `file.uploaded` → Generate thumbnails
+- `file.deleted` → Remove thumbnails
+
+**Events Published**:
+- `thumbnail.ready` → Thumbnail generation completed
+- `thumbnail.failed` → Thumbnail generation failed
+
+**Database**: PostgreSQL (gdrive_metadata)  
+**Tables**: thumbnail_metadata
+
+**Supported Content Types**:
+- Images: JPEG, PNG, WebP, GIF
+- PDFs: First page preview
+- Videos: MP4, WebM (frame extraction)
+
+---
+
 ## Infrastructure Services
 
 ### PostgreSQL
 - **Database**: gdrive_metadata
-- **Tables**: file_metadata, file_activities
+- **Tables**: file_metadata, file_activities, thumbnail_metadata
 - **Port**: 5432
 
 ### Redis
@@ -311,7 +387,7 @@ mini-google-drive/
 
 ### Apache Kafka
 - **Purpose**: Event streaming
-- **Topics**: file.uploaded, file.deleted, file.downloaded, metadata.updated, activity.log
+- **Topics**: file.uploaded, file.deleted, file.downloaded, metadata.updated, activity.log, thumbnail.ready, thumbnail.failed
 - **Port**: 9092
 
 ### Zookeeper
@@ -320,7 +396,7 @@ mini-google-drive/
 
 ### MinIO
 - **Purpose**: Object storage
-- **Bucket**: gdrive-files
+- **Buckets**: gdrive-files, gdrive-thumbnails
 - **Ports**: 9000 (API), 9001 (Console)
 
 ---
@@ -357,6 +433,7 @@ mini-google-drive/
 | Metadata Service | 8082 | Internal |
 | Search Service | 8083 | Internal |
 | Activity Service | 8084 | Internal |
+| Thumbnail Service | 8085 | Internal |
 | PostgreSQL | 5432 | Internal |
 | Redis | 6379 | Internal |
 | Elasticsearch | 9200, 9300 | Internal |
@@ -370,11 +447,13 @@ mini-google-drive/
 
 | Topic | Producer | Consumers |
 |-------|----------|-----------|
-| file.uploaded | File Service | Metadata, Search, Activity |
-| file.deleted | File Service | Metadata, Search, Activity |
+| file.uploaded | File Service | Metadata, Search, Activity, Thumbnail |
+| file.deleted | File Service | Metadata, Search, Activity, Thumbnail |
 | file.downloaded | File Service | Activity |
 | metadata.updated | Metadata Service | Search |
 | activity.log | All Services | Activity |
+| thumbnail.ready | Thumbnail Service | (Frontend notification) |
+| thumbnail.failed | Thumbnail Service | (Monitoring/DLQ) |
 
 ---
 
@@ -408,6 +487,26 @@ ip_address VARCHAR(45)
 user_agent VARCHAR(500)
 timestamp TIMESTAMP [INDEXED]
 metadata TEXT
+```
+
+### thumbnail_metadata Table
+```sql
+id (PK) UUID
+file_id VARCHAR(100) [INDEXED]
+owner_id VARCHAR(100) [INDEXED]
+size VARCHAR(20) [ENUM: SMALL, GRID, PREVIEW]
+storage_path VARCHAR(500)
+url VARCHAR(500)
+format VARCHAR(10)
+width INT
+height INT
+file_size BIGINT
+status VARCHAR(20) [INDEXED, ENUM: PENDING, PROCESSING, READY, FAILED, DELETED]
+attempt_count INT
+last_error VARCHAR(1000)
+version INT
+created_at TIMESTAMP
+updated_at TIMESTAMP
 ```
 
 ---
@@ -448,12 +547,12 @@ kubectl apply -f k8s/
 
 ---
 
-**Total Lines of Code**: ~5,000 (skeleton only)  
-**Total Files**: ~80  
-**Microservices**: 5  
+**Total Lines of Code**: ~6,500 (skeleton only)  
+**Total Files**: ~100+  
+**Microservices**: 6  
 **Infrastructure Services**: 6  
-**REST Endpoints**: ~20  
-**Kafka Topics**: 5  
-**Database Tables**: 2
+**REST Endpoints**: ~25  
+**Kafka Topics**: 7  
+**Database Tables**: 3
 
-This is a production-ready skeleton structure for a Mini Google Drive system, designed specifically for system design interviews and demonstrating enterprise-level Spring Boot microservices architecture.
+This is a production-ready skeleton structure for a cloud file-storage platform, designed specifically for system design interviews and demonstrating enterprise-level Spring Boot microservices architecture with asynchronous processing, event-driven design, and content optimization.

@@ -14,6 +14,7 @@ Client → API Gateway → Microservices → Kafka → Databases/Elasticsearch/R
 - **Metadata Service**: File metadata management (PostgreSQL)
 - **Search Service**: Fast file search (Elasticsearch + Redis cache)
 - **Activity Service**: Async activity tracking via Kafka
+- **Thumbnail Service**: Async thumbnail generation for images/PDFs/videos
 
 ## 🚀 Technology Stack
 
@@ -31,11 +32,12 @@ Client → API Gateway → Microservices → Kafka → Databases/Elasticsearch/R
 
 ```
 mini-google-drive/
-├── api-gateway/           # API Gateway Service
-├── file-service/          # File Upload/Download Service
-├── metadata-service/      # Metadata Management Service
-├── search-service/        # Search & Indexing Service
-├── activity-service/      # Activity Tracking Service
+├── api-gateway/           # API Gateway Service (Port 8080)
+├── file-service/          # File Upload/Download Service (Port 8081)
+├── metadata-service/      # Metadata Management Service (Port 8082)
+├── search-service/        # Search & Indexing Service (Port 8083)
+├── activity-service/      # Activity Tracking Service (Port 8084)
+├── thumbnail-service/     # Thumbnail Generation Service (Port 8085)
 ├── common-lib/           # Shared libraries and utilities
 ├── docker-compose.yml    # Local development setup
 └── k8s/                  # Kubernetes deployment files
@@ -77,6 +79,9 @@ cd search-service && mvn spring-boot:run
 
 # Terminal 5 - Activity Service
 cd activity-service && mvn spring-boot:run
+
+# Terminal 6 - Thumbnail Service
+cd thumbnail-service && mvn spring-boot:run
 ```
 
 ## 🔌 API Endpoints
@@ -95,6 +100,12 @@ cd activity-service && mvn spring-boot:run
 
 ### Activity
 - `GET /api/v1/activities/user/{userId}` - Get user activities
+
+### Thumbnails
+- `GET /api/v1/thumbnails/{fileId}?size={SMALL|GRID|PREVIEW}` - Get thumbnail
+- `GET /api/v1/thumbnails/{fileId}/status` - Get thumbnail generation status
+- `POST /api/v1/thumbnails/request` - Request thumbnail generation
+- `DELETE /api/v1/thumbnails/{fileId}` - Delete thumbnails
 
 ## 🐳 Docker Deployment
 
@@ -126,15 +137,21 @@ kubectl get services
 5. **API Gateway Pattern**: Centralized routing and security
 6. **Horizontal Scaling**: Kubernetes for auto-scaling
 7. **Separation of Concerns**: Clear service boundaries
+8. **Asynchronous Processing**: Non-blocking thumbnail generation
+9. **Content Delivery Optimization**: Thumbnails for fast UI rendering
 
 ## 📊 File Upload Flow
 
 1. Client uploads file via API Gateway
 2. File Service stores file in object storage (MinIO/S3)
-3. File Service publishes event to Kafka
+3. File Service publishes `file.uploaded` event to Kafka
 4. Metadata Service saves metadata to PostgreSQL
 5. Search Service indexes file in Elasticsearch
 6. Activity Service logs the upload activity
+7. Thumbnail Service generates thumbnails asynchronously (for images/PDFs/videos)
+   - Generates 3 sizes: SMALL (150x150), GRID (200x200), PREVIEW (400x400)
+   - Stores thumbnails in object storage
+   - Publishes `thumbnail.ready` event when complete
 
 ## 🔐 Security Features
 
