@@ -1,0 +1,17 @@
+spring:
+  # Database Configuration (Docker)
+  datasource:
+    url: jdbc:postgresql://postgres:5432/gdrive_metadata
+  
+  # Kafka Configuration (Docker)
+  kafka:
+    bootstrap-servers: kafka:9092
+  
+  # Redis Configuration (Docker)
+  data:
+    redis:
+      host: redis
+
+# MinIO Configuration (Docker)
+minio:
+  endpoint: http://minio:9000

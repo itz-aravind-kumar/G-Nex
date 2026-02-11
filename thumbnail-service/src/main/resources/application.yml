@@ -1,0 +1,90 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: thumbnail-service
+  
+  # Database Configuration
+  datasource:
+    url: jdbc:postgresql://localhost:5432/gdrive_metadata
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+  
+  # Kafka Configuration
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: thumbnail-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+  
+  # Redis Configuration
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2000ms
+
+# MinIO Configuration
+minio:
+  endpoint: http://localhost:9000
+  access-key: minioadmin
+  secret-key: minioadmin
+  bucket:
+    thumbnails: gdrive-thumbnails
+    files: gdrive-files
+  presigned-url-ttl: 3600 # 1 hour in seconds
+
+# Thumbnail Configuration
+thumbnail:
+  formats:
+    preferred: webp
+    fallback: jpg
+  max-attempts: 3
+  retry-delay-minutes: 5
+  worker:
+    pool-size: 10
+    queue-capacity: 100
+  supported-types:
+    - image/jpeg
+    - image/png
+    - image/webp
+    - image/gif
+    - application/pdf
+    - video/mp4
+    - video/webm
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+
+# Logging Configuration
+logging:
+  level:
+    com.gnexdrive.thumbnailservice: INFO
+    org.springframework.kafka: WARN
+    org.hibernate: WARN
