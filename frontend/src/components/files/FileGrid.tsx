@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { FileMetadata } from '@/types'
 import { fileService } from '@/services/fileService'
+import ShareDialog from '../sharing/ShareDialog'
 import {
   File,
   FileText,
@@ -52,6 +53,8 @@ export default function FileGrid({ files, onRefresh, viewMode = 'grid' }: FileGr
   const [downloading, setDownloading] = useState<string | null>(null)
   const [thumbnails, setThumbnails] = useState<Record<string, string | null>>({})
   const [loadingThumbnails, setLoadingThumbnails] = useState<Record<string, boolean>>({})
+  const [shareDialogOpen, setShareDialogOpen] = useState(false)
+  const [fileToShare, setFileToShare] = useState<FileMetadata | null>(null)
 
   // Fetch thumbnails for supported file types
   useEffect(() => {
@@ -110,6 +113,11 @@ export default function FileGrid({ files, onRefresh, viewMode = 'grid' }: FileGr
       console.error('Delete failed:', error)
       alert('Failed to delete file. Please try again.')
     }
+  }
+
+  const handleShare = (file: FileMetadata) => {
+    setFileToShare(file)
+    setShareDialogOpen(true)
   }
 
   // Ensure files is always an array
@@ -175,6 +183,7 @@ export default function FileGrid({ files, onRefresh, viewMode = 'grid' }: FileGr
                         <Download className="w-4 h-4" />
                       </button>
                       <button
+                        onClick={() => handleShare(file)}
                         className="p-2 text-gray-600 hover:bg-gray-100 rounded transition"
                         title="Share"
                       >
@@ -281,7 +290,7 @@ export default function FileGrid({ files, onRefresh, viewMode = 'grid' }: FileGr
                 <button
                   onClick={e => {
                     e.stopPropagation()
-                    // TODO: Implement share
+                    handleShare(file)
                   }}
                   className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
                   title="Share"
@@ -293,6 +302,20 @@ export default function FileGrid({ files, onRefresh, viewMode = 'grid' }: FileGr
           </div>
         )
       })}
+
+      {/* Share Dialog */}
+      {fileToShare && (
+        <ShareDialog
+          isOpen={shareDialogOpen}
+          onClose={() => {
+            setShareDialogOpen(false)
+            setFileToShare(null)
+          }}
+          resourceId={fileToShare.fileId}
+          resourceType="FILE"
+          resourceName={fileToShare.fileName}
+        />
+      )}
     </div>
   )
 }

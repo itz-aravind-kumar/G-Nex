@@ -1,4 +1,4 @@
-package com.gnexdrive.searchservice.config;
+package com.gnexdrive.metadataservice.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
@@ -20,7 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Redis cache configuration for search results caching
+ * Redis cache configuration for metadata caching
  */
 @Configuration
 @EnableCaching
@@ -35,10 +35,15 @@ public class RedisConfig {
     @Value("${spring.data.redis.password:}")
     private String redisPassword;
 
-    public static final String CACHE_SEARCH_RESULTS = "searchResults";
-    public static final String CACHE_FILE_DOCUMENT = "fileDocument";
+    public static final String CACHE_FILE_METADATA = "fileMetadata";
+    public static final String CACHE_USER_FILES = "userFiles";
+    public static final String CACHE_FOLDER = "folder";
+    public static final String CACHE_USER_FOLDERS = "userFolders";
+    public static final String CACHE_PERMISSIONS = "permissions";
+    
     public static final Duration DEFAULT_TTL = Duration.ofMinutes(30);
-    public static final Duration SEARCH_TTL = Duration.ofMinutes(10);
+    public static final Duration FILE_METADATA_TTL = Duration.ofMinutes(15);
+    public static final Duration USER_FILES_TTL = Duration.ofMinutes(5);
 
     @Bean
     public RedisConnectionFactory redisConnectionFactory() {
@@ -85,11 +90,20 @@ public class RedisConfig {
         // Custom TTL for different caches
         Map<String, RedisCacheConfiguration> cacheConfigurations = new HashMap<>();
         
-        // Search results - shorter TTL since data changes frequently
-        cacheConfigurations.put(CACHE_SEARCH_RESULTS, defaultConfig.entryTtl(SEARCH_TTL));
+        // File metadata - moderate TTL
+        cacheConfigurations.put(CACHE_FILE_METADATA, defaultConfig.entryTtl(FILE_METADATA_TTL));
         
-        // File documents - longer TTL
-        cacheConfigurations.put(CACHE_FILE_DOCUMENT, defaultConfig.entryTtl(Duration.ofHours(1)));
+        // User files list - short TTL since it changes frequently
+        cacheConfigurations.put(CACHE_USER_FILES, defaultConfig.entryTtl(USER_FILES_TTL));
+        
+        // Folder cache
+        cacheConfigurations.put(CACHE_FOLDER, defaultConfig.entryTtl(FILE_METADATA_TTL));
+        
+        // User folders list
+        cacheConfigurations.put(CACHE_USER_FOLDERS, defaultConfig.entryTtl(USER_FILES_TTL));
+        
+        // Permissions - moderate TTL
+        cacheConfigurations.put(CACHE_PERMISSIONS, defaultConfig.entryTtl(Duration.ofMinutes(10)));
 
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(defaultConfig)

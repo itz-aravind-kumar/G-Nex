@@ -31,7 +31,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/actuator",
             "/health",
             "/api/v1/auth",
-            "/api/v1/thumbnails"
+            "/api/v1/thumbnails",
+            "/api/v1/share/link/"  // Public share link access
     );
 
     @Override

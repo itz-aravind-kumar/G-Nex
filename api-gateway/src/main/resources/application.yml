@@ -27,6 +27,14 @@ spring:
           filters:
             - StripPrefix=0
         
+        # Share Service Routes (via Metadata Service)
+        - id: share-service
+          uri: http://localhost:8082
+          predicates:
+            - Path=/api/v1/share/**
+          filters:
+            - StripPrefix=0
+        
         # User Service Routes
         - id: user-service
           uri: http://localhost:8083

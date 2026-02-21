@@ -1,10 +1,14 @@
 package com.gnexdrive.metadataservice.service.impl;
 
 import com.gnexdrive.common.dto.FileMetadataDto;
+import com.gnexdrive.metadataservice.config.RedisConfig;
 import com.gnexdrive.metadataservice.repository.FileMetadataRepository;
 import com.gnexdrive.metadataservice.service.MetadataService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -25,6 +29,9 @@ public class MetadataServiceImpl implements MetadataService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+        @CacheEvict(value = RedisConfig.CACHE_USER_FILES, key = "#metadataDto.ownerId")
+    })
     public FileMetadataDto saveMetadata(FileMetadataDto metadataDto) {
         log.info("Saving metadata for file: {}", metadataDto.getFileId());
         
@@ -45,6 +52,7 @@ public class MetadataServiceImpl implements MetadataService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = RedisConfig.CACHE_FILE_METADATA, key = "#fileId")
     public FileMetadataDto getMetadata(String fileId) {
         log.info("Fetching metadata for file: {}", fileId);
         
@@ -71,6 +79,10 @@ public class MetadataServiceImpl implements MetadataService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+        @CacheEvict(value = RedisConfig.CACHE_FILE_METADATA, key = "#fileId"),
+        @CacheEvict(value = RedisConfig.CACHE_USER_FILES, key = "#userId")
+    })
     public FileMetadataDto updateMetadata(String fileId, FileMetadataDto metadataDto, String userId) {
         log.info("Updating metadata for file: {} by user: {}", fileId, userId);
         
@@ -99,6 +111,10 @@ public class MetadataServiceImpl implements MetadataService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+        @CacheEvict(value = RedisConfig.CACHE_FILE_METADATA, key = "#fileId"),
+        @CacheEvict(value = RedisConfig.CACHE_USER_FILES, key = "#userId")
+    })
     public void deleteMetadata(String fileId, String userId) {
         log.info("Deleting metadata for file: {} by user: {}", fileId, userId);
         
